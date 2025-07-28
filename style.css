@@ -26,7 +26,33 @@ body {
   font-family: 'Segoe UI', sans-serif;
   background-color: #f7f7f7;
   padding: 1rem;
+  padding-top: 3.5rem;
 }
+.center-heading {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, #007BFF, #00BFFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
 #chatUI {
   width: 100%;
   max-width: 800px;
@@ -85,6 +111,9 @@ body {
   margin-top: 0.2rem;
 }
 @media (max-width: 576px) {
+  .chat-heading {
+    font-size: 1.25rem;
+  }
   .message-content {
     max-width: 100%;
     padding: 0.5rem 0.75rem;
