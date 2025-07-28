@@ -28,7 +28,6 @@
         <button onclick="sendMessage()" class="btn btn-outline-primary w-100">Send</button>
       </div>
     </div>
-    <button id="closeRoomBtn" class="btn btn-danger mt-3" style="display: none;" onclick="closeRoom()">Close Room</button>
     <br><br>
     <p style="font-size: 0.9rem;">*Share the chat ID with your friends to let them join the group</p>
   </div>
@@ -45,7 +44,7 @@
         chatId = 'chat_' + Math.random().toString(36).substring(2, 10);
       }
 
-      socket = new WebSocket(location.origin.replace(/^http/, 'ws'));
+      socket = new WebSocket(location.origin.replace('ws://localhost:8080'));
       socket.onopen = () => {
         socket.send(JSON.stringify({ type: 'join', username, chatId }));
         document.getElementById('login').style.display = 'none';
@@ -56,11 +55,11 @@
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === "room-closed") {
-        alert("This room has been closed by the creator.");
-        socket.close();
-        location.reload();
-        return;
-      }
+          alert("This room has been closed by the creator.");
+          socket.close();
+          location.reload();
+          return;
+        }
         const time = new Date(data.date).toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
@@ -68,7 +67,7 @@
         });
         const isSelf = data.username === username;
 
-        const card = `
+        const card = 
           <div class="chat-message ${isSelf ? 'self' : ''}">
             <div class="message-content">
               <h6 class="username">${isSelf ? 'You' : data.username}</h6>
@@ -76,18 +75,10 @@
               <span class="time">${time}</span>
             </div>
           </div>
-        `;
+        ;
         document.getElementById('chatBox').innerHTML += card;
         document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
       };
-    }
-    function closeRoom() {
-      if (socket && chatId) {
-        socket.send(JSON.stringify({ type: "close-room", chatId }));
-        alert("You closed the room.");
-        socket.close();
-        location.reload(); // Optional: refresh UI
-      }
     }
     function sendMessage() {
       const input = document.getElementById('messageInput');
@@ -103,4 +94,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
