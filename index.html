@@ -14,7 +14,8 @@
     <div class="btn btn-md btn-outline-success mb-3" id="old" style="display: inline;">Join Chat Room</div>
     <input type="text" id="username" class="form-control mb-2 w-150 mx-auto" placeholder="Enter your name" required style="visibility:hidden;">
     <input type="text" id="chatId" class="form-control mb-2 w-150 mx-auto" placeholder="Enter chat ID (room)" style="visibility: hidden;">
-    <button onclick="joinChat()" class="btn btn-primary" style="visibility: hidden;" id="join">Join Chat</button>
+    <button onclick="joinChat()" class="btn btn-primary" style="visibility: hidden;" id="join">Join Chat</button>\
+    
   </div>
   <div id="chatUI" class="mt-4" style="display: none;">
     <h6 id="chatRoomHeader" class="text-center mb-3"></h6>
@@ -27,6 +28,7 @@
         <button onclick="sendMessage()" class="btn btn-outline-primary w-100">Send</button>
       </div>
     </div>
+    <button id="closeRoomBtn" class="btn btn-danger mt-3" style="display: none;" onclick="closeRoom()">Close Room</button>
     <br><br>
     <p style="font-size: 0.9rem;">*Share the chat ID with your friends to let them join the group</p>
   </div>
@@ -38,7 +40,7 @@
     function joinChat() {
       username = document.getElementById('username').value.trim();
       chatId = document.getElementById('chatId').value.trim();
-
+      document.getElementById('closeRoomBtn').style.display = 'block';
       if (!chatId) {
         chatId = 'chat_' + Math.random().toString(36).substring(2, 10);
       }
@@ -53,6 +55,12 @@
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        if (data.type === "room-closed") {
+        alert("This room has been closed by the creator.");
+        socket.close();
+        location.reload();
+        return;
+      }
         const time = new Date(data.date).toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
@@ -73,7 +81,14 @@
         document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
       };
     }
-
+    function closeRoom() {
+      if (socket && chatId) {
+        socket.send(JSON.stringify({ type: "close-room", chatId }));
+        alert("You closed the room.");
+        socket.close();
+        location.reload(); // Optional: refresh UI
+      }
+    }
     function sendMessage() {
       const input = document.getElementById('messageInput');
       const msg = input.value.trim();
