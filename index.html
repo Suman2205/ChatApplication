@@ -63,7 +63,7 @@
         const card = `
           <div class="chat-message ${isSelf ? 'self' : ''}">
             <div class="message-content">
-              <h6 class="username">${data.username}</h6>
+              <h6 class="username">${isSelf ? 'You' : username}</h6>
               <p class="text">${data.message}</p>
               <span class="time">${time}</span>
             </div>
