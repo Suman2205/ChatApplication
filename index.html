@@ -42,7 +42,7 @@
         chatId = 'chat_' + Math.random().toString(36).substring(2, 10);
       }
 
-      socket = new WebSocket('ws://localhost:8080');
+      socket = new WebSocket(location.origin.replace(/^http/, 'ws'));
       socket.onopen = () => {
         socket.send(JSON.stringify({ type: 'join', username, chatId }));
         document.getElementById('login').style.display = 'none';
