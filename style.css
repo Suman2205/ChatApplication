@@ -60,7 +60,7 @@ body {
 }
 #chatBox {
   flex-grow: 1;
-  height: 70vh;
+  height: 60vh;
   overflow-y: auto;
   margin-bottom: 1rem;
   background-color: white;
