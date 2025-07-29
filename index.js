@@ -47,16 +47,12 @@ wss.on('connection', (ws) => {
         }
       }else if (msg.type === 'close-room') {
       const { chatId } = msg;
-
-      // Notify all clients in the room
       chatRooms[chatId]?.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: 'room-closed', chatId }));
           client.close();
         }
       });
-
-      // Clean up memory
       delete chatRooms[chatId];
       delete chatHistory[chatId];
       console.log(`🔒 Room ${chatId} was closed by its owner.`);
