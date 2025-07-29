@@ -87,7 +87,7 @@
         socket.send(JSON.stringify({ type: "close-room", chatId }));
         alert("You closed the room.");
         socket.close();
-        location.reload(); // Optional: refresh UI
+        location.reload();
       }
     }
     function sendMessage() {
