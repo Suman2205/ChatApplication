@@ -1,5 +1,6 @@
 
 document.getElementById('new').addEventListener("click",()=>{
+    let close=document.getElementById('closeRoomBtn');
     let newChat=document.getElementById('new');
     newChat.remove();
     let old=document.getElementById('old');
@@ -9,6 +10,7 @@ document.getElementById('new').addEventListener("click",()=>{
     let username=document.getElementById('username');
     username.style.visibility="visible";
     join.style.visibility="visible";
+    close.style.visibility="visible";
 })
 document.getElementById('old').addEventListener("click",()=>{
     let newChat=document.getElementById('new');
