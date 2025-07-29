@@ -22,12 +22,14 @@ It includes:
 - ✅ Create or join chat rooms using a unique ID  
 - 📡 Instant real-time messaging with WebSocket  
 - 💾 Chat history sync for late joiners  
+- 🔐 Only the **chat room creator** can close the room  
+- 🗑 Once closed, all messages in that room are **permanently deleted**  
 - 🎨 Stylish and clean Bootstrap-based UI  
 - 📱 Fully responsive (mobile, tablet, and desktop)  
 - 💬 Different message styling for sender/receiver  
-- 🔐 Shareable group chat ID to invite friends  
+- 🔗 Shareable group chat ID to invite friends
 
----
+------
 
 ## 🚀 Live Demo
 
