@@ -236,6 +236,9 @@
                 </svg>
                 &nbsp;Close Room
               </button>
+              <button id="leaveRoomBtn" class="btn btn-outline-secondary btn-sm" onclick="leaveRoom()">
+                Leave Room
+              </button>
             </div>
           </div>
 
@@ -271,15 +274,6 @@
 
   <!-- Toast container (for "You joined" and other ephemeral notices) -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-  <!-- Footer -->
-  <footer class="site-footer">
-    <div class="container d-flex justify-content-between align-items-center">
-      <span>© 2025 ChatNova</span>
-      <span class="text-muted">Designed for focused group collaboration</span>
-    </div>
-  </footer>
-
   <!-- Inline helpers + preserves joinChat/sendMessage/closeRoom function names -->
   <script>
 /* ---------------- DOM ---------------- */
@@ -415,6 +409,9 @@
         if (isCreator) {
           closeBtn.style.display = 'inline-flex';
           closeBtn.style.visibility = 'visible';
+          leaveRoomBtn.style.display = 'none'; // hide leave button for creator
+        } else {
+          leaveRoomBtn.style.display = 'inline-flex'; // show leave button for non-creator
         }
         return;
       }
@@ -476,6 +473,20 @@
     if (!isCreator) return alert('Only creator can close room');
     socket.send(JSON.stringify({ type:'close-room', chatId }));
   }
+
+  function leaveRoom() {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      // Notify the server that the user is leaving
+      socket.send(JSON.stringify({ type: 'leave', username, chatId }));
+      socket.close();
+    }
+    // Redirect to home page (login section)
+    chatUI.style.display = 'none';
+    loginSection.style.display = 'block';
+    resetAuth();
+    showToast('You left the room');
+  }
+
 
   /* ---------------- TYPING ---------------- */
   function handleComposerKey(e) {
