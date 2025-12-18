@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -104,4 +104,406 @@
   <script src="app.js"></script>
 </body>
 </html>
+ -->
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ChatNova — Group Chat</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom style -->
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/reconnecting-websocket/dist/reconnecting-websocket-iife.min.js"></script>
+</head>
+<body>
+
+  <!-- Top navigation (persistent, compact) -->
+  <header class="site-top">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="brand d-flex align-items-center gap-3">
+        <div class="brand-mark">
+          <img src="Logo.png" alt="ChatNova Logo" class="brand-logo" />
+        </div>
+        <div>
+          <div class="brand-title">ChatNova</div>
+          <div class="brand-sub">Real-Time Group Chat</div>
+        </div>
+      </div>
+
+
+      <div class="top-actions">
+        <span class="small text-muted">No signup • Instant rooms</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Landing / Login area -->
+  <section id="login" class="landing container">
+    <div class="landing-card">
+      <div class="row g-0 align-items-center">
+        <div class="col-lg-6 p-4">
+          <h1 class="landing-title">Connect. Collaborate. Converse.</h1>
+          <p class="landing-desc">
+            Create a focused group room or join an existing one. Clean UI, minimal latency — built for study groups and team discussions.
+          </p>
+
+          <div class="d-flex gap-2 mb-3">
+            <button id="new" class="btn btn-outline-primary flex-fill">Create Room</button>
+            <button id="old" class="btn btn-outline-success flex-fill">Join Room</button>
+          </div>
+
+          <div id="authFields" class="auth-fields" style="display:none;">
+            <label class="form-label small mb-1" for="username">Your name</label>
+            <input id="username" class="form-control mb-2" placeholder="e.g. Suman Mondal" autocomplete="off" />
+
+            <label class="form-label small mb-1" for="chatId">Room ID (optional)</label>
+            <input id="chatId" class="form-control mb-3" placeholder="Leave empty to auto-generate" autocomplete="off" />
+
+            <div class="d-flex gap-2">
+              <button id="join" class="btn btn-primary flex-fill" onclick="joinChat()">Enter Chat</button>
+              <button id="resetAuth" class="btn btn-light flex-fill" type="button" onclick="resetAuth()">Reset</button>
+            </div>
+
+            <div class="mt-3 text-muted small">
+              Room ID will be generated when creating a room. Share it with participants to invite them.
+            </div>
+          </div>
+        </div>
+
+        <!-- Illustration -->
+        <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center p-4">
+          <div class="hero-illustration" aria-hidden>
+            <!-- a soft chat illustration (SVG) -->
+            <svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="320" height="220" rx="16" fill="#E8F6FF"/>
+              <g transform="translate(18,18)">
+                <rect width="200" height="120" rx="12" fill="#fff"/>
+                <rect x="8" y="10" width="184" height="14" rx="6" fill="#EFF8FF"/>
+                <rect x="8" y="34" width="140" height="10" rx="5" fill="#F6FAFF"/>
+                <rect x="8" y="52" width="120" height="10" rx="5" fill="#F6FAFF"/>
+                <circle cx="220" cy="40" r="28" fill="#DFF5FF"/>
+                <path d="M205 48c6 6 16 6 22 0" stroke="#9EE7FF" stroke-linecap="round" stroke-width="3"/>
+                <rect x="0" y="135" width="280" height="70" rx="12" fill="#fff" opacity="0.9"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chat UI (fills remaining viewport) -->
+  <main id="chatUI" class="chat-shell" style="display:none;">
+    <div class="container-fluid h-100">
+      <div class="row h-100 g-0">
+        <!-- Left: participant list (collapsible on small screens) -->
+        <aside class="col-lg-3 col-xl-2 participants-column border-end d-none d-lg-flex flex-column p-3">
+          <div class="participants-header d-flex align-items-center justify-content-between mb-3">
+            <strong>Participants</strong>
+            <small id="participantCount" class="text-muted">0</small>
+          </div>
+          <div id="participantsList" class="flex-fill overflow-auto">
+            <!-- list items added by server messages if any -->
+            <div class="participant empty text-muted">No participants yet</div>
+          </div>
+        </aside>
+
+        <!-- Center: messages -->
+        <section class="col-12 col-lg-9 col-xl-8 d-flex flex-column p-0">
+          <div class="chat-header px-4 py-3 d-flex align-items-center justify-content-between">
+            <div>
+              <div id="chatRoomHeader" class="chat-title">Room</div>
+              <div class="chat-sub text-muted">Live conversation</div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <!-- typing indicator placed near header -->
+              <div id="typingIndicator" class="typing-indicator text-muted small" aria-live="polite"></div>
+
+              <!-- Close Room will be shown only for the creator -->
+              <button id="closeRoomBtn" class="btn btn-outline-danger btn-sm" onclick="closeRoom()" style="display:none; visibility:hidden;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden focusable="false">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                &nbsp;Close Room
+              </button>
+            </div>
+          </div>
+
+          <div id="chatBox" class="chat-area p-4 overflow-auto" role="log" aria-live="polite">
+            <!-- messages appended here -->
+          </div>
+
+          <div class="chat-composer p-3 border-top d-flex gap-2 align-items-center">
+            <input id="messageInput" type="text" class="form-control composer-input" placeholder="Write a message..." onkeydown="handleComposerKey(event)" autocomplete="off" />
+            <button class="btn send-btn" onclick="sendMessage()" aria-label="Send message">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden focusable="false">
+                <path d="M3 11l18-8-8 18-2-7-8-3z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Right: room info / actions -->
+        <aside class="col-xl-2 d-none d-xl-flex flex-column p-3 border-start info-column">
+          <div class="mb-3">
+            <h6 class="mb-1">Room Info</h6>
+            <p class="small text-muted mb-0">Share this room ID with participants.</p>
+            <div class="badge-room mt-2" id="roomBadge">—</div>
+          </div>
+
+          <div class="mt-auto small text-muted">
+            Created with focus on quick collaboration. Close the room to remove conversation history for everyone.
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast container (for "You joined" and other ephemeral notices) -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container d-flex justify-content-between align-items-center">
+      <span>© 2025 ChatNova</span>
+      <span class="text-muted">Designed for focused group collaboration</span>
+    </div>
+  </footer>
+
+  <!-- Inline helpers + preserves joinChat/sendMessage/closeRoom function names -->
+  <script>
+/* ---------------- DOM ---------------- */
+  const authFields = document.getElementById('authFields');
+  const loginSection = document.getElementById('login');
+  const chatUI = document.getElementById('chatUI');
+  const chatBox = document.getElementById('chatBox');
+  const closeBtn = document.getElementById('closeRoomBtn');
+  const roomBadge = document.getElementById('roomBadge');
+  const participantsList = document.getElementById('participantsList');
+  const participantCount = document.getElementById('participantCount');
+  const typingIndicator = document.getElementById('typingIndicator');
+  const toastContainer = document.getElementById('toastContainer');
+
+  const usernameInput = document.getElementById('username');
+  const chatIdInput = document.getElementById('chatId');
+  const messageInput = document.getElementById('messageInput');
+
+  const newBtn = document.getElementById('new');
+  const oldBtn = document.getElementById('old');
+  const joinBtn = document.getElementById('join');
+
+  /* ---------------- STATE ---------------- */
+  let socket;
+  let username = '';
+  let chatId = '';
+  let isCreator = false;
+  const participants = new Set();
+  const typingUsers = new Map();
+  let localTypingTimer = null;
+  let localTypingSent = false;
+
+  // Mode flag: true when user clicked "Create Room", false for "Join Room"
+  let createMode = false;
+
+  /* ---------------- UI HELPERS ---------------- */
+  function showToast(msg, t = 2200) {
+    const el = document.createElement('div');
+    el.className = 'cn-toast';
+    el.textContent = msg;
+    toastContainer.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('visible'));
+    setTimeout(() => {
+      el.classList.remove('visible');
+      setTimeout(() => el.remove(), 300);
+    }, t);
+  }
+
+  function updateParticipants() {
+    participantsList.innerHTML = '';
+    if (!participants.size) {
+      participantsList.innerHTML = `<div class="participant empty text-muted">No participants</div>`;
+    } else {
+      participants.forEach(u => {
+        const el = document.createElement('div');
+        el.className = 'participant d-flex gap-2 py-2';
+        el.innerHTML = `<div class="avatar">${u[0]}</div><div>${u === username ? 'You' : u}</div>`;
+        participantsList.appendChild(el);
+      });
+    }
+    participantCount.textContent = participants.size;
+  }
+
+  function renderMessage(from, text, ts) {
+    const time = new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    const self = from === username;
+    const msg = document.createElement('div');
+    msg.className = 'message' + (self ? ' self' : '');
+    msg.innerHTML = `
+      <div class="bubble">
+        <div class="meta">${self ? 'You' : from} · ${time}</div>
+        <div>${escapeHtml(text)}</div>
+      </div>`;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  /* ---------------- CREATE / JOIN BUTTONS ---------------- */
+  // Clicking Create: show auth fields, pre-fill a generated room id and lock it
+  newBtn.addEventListener('click', () => {
+    createMode = true;
+    authFields.style.display = 'block';
+    // Pre-generate a friendly room id
+    chatIdInput.value = `chat_${Math.random().toString(36).slice(2,10)}`;
+    chatIdInput.readOnly = true;
+    joinBtn.textContent = 'Enter Chat';
+    usernameInput.focus();
+  });
+
+  // Clicking Join: show auth fields, clear room id for manual entry
+  oldBtn.addEventListener('click', () => {
+    createMode = false;
+    authFields.style.display = 'block';
+    chatIdInput.value = '';
+    chatIdInput.readOnly = false;
+    chatIdInput.placeholder = 'Enter existing room id (or leave empty to auto-generate)';
+    joinBtn.textContent = 'Enter Chat';
+    usernameInput.focus();
+  });
+
+  // Reset auth inputs (clear inputs; do not hide auth panel)
+  function resetAuth() {
+    usernameInput.value = '';
+    chatIdInput.value = '';
+    chatIdInput.readOnly = false;
+    usernameInput.focus();
+  }
+
+  /* ---------------- JOIN ---------------- */
+  function joinChat() {
+    username = usernameInput.value.trim() || `Guest_${Math.random().toString(36).slice(2,6)}`;
+    chatId = chatIdInput.value.trim() || `chat_${Math.random().toString(36).slice(2,10)}`;
+    roomBadge.textContent = chatId;
+
+    loginSection.style.display = 'none';
+    chatUI.style.display = 'block';
+    showToast(`You joined ${chatId}`);
+
+    socket = new ReconnectingWebSocket(
+      `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`
+    );
+
+    socket.onopen = () => {
+      // send create flag if user explicitly chose "Create Room"
+      socket.send(JSON.stringify({ type:'join', username, chatId, create: createMode }));
+    };
+
+    socket.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+
+      if (d.type === 'role') {
+        isCreator = d.role === 'creator';
+        if (isCreator) {
+          closeBtn.style.display = 'inline-flex';
+          closeBtn.style.visibility = 'visible';
+        }
+        return;
+      }
+
+      if (d.type === 'participants') {
+        participants.clear();
+        d.list.forEach(u => participants.add(u));
+        updateParticipants();
+        return;
+      }
+
+      if (d.type === 'join' && d.username !== username) {
+        showToast(`${d.username} joined`);
+        return;
+      }
+
+      if (d.type === 'leave') {
+        participants.delete(d.username);
+        updateParticipants();
+        showToast(`${d.username} left`);
+        return;
+      }
+
+      if (d.type === 'typing') {
+        if (d.username === username) return;
+        if (d.typing) {
+          typingUsers.set(d.username, Date.now());
+        } else {
+          typingUsers.delete(d.username);
+        }
+        typingIndicator.textContent =
+          typingUsers.size ? `${[...typingUsers.keys()][0]} is typing...` : '';
+        return;
+      }
+
+      if (d.type === 'room-closed') {
+        showToast('Room closed by creator');
+        socket.close();
+        setTimeout(() => location.reload(), 1200);
+        return;
+      }
+
+      if (d.type === 'message') {
+        renderMessage(d.username, d.message, d.date);
+      }
+    };
+  }
+
+  /* ---------------- SEND ---------------- */
+  function sendMessage() {
+    const msg = messageInput.value.trim();
+    if (!msg) return;
+    socket.send(JSON.stringify({ type:'message', message:msg }));
+    messageInput.value = '';
+  }
+
+  /* ---------------- CLOSE ROOM ---------------- */
+  function closeRoom() {
+    if (!isCreator) return alert('Only creator can close room');
+    socket.send(JSON.stringify({ type:'close-room', chatId }));
+  }
+
+  /* ---------------- TYPING ---------------- */
+  function handleComposerKey(e) {
+    if (!localTypingSent) {
+      socket.send(JSON.stringify({ type:'typing', username, chatId, typing:true }));
+      localTypingSent = true;
+    }
+    clearTimeout(localTypingTimer);
+    localTypingTimer = setTimeout(() => {
+      socket.send(JSON.stringify({ type:'typing', username, chatId, typing:false }));
+      localTypingSent = false;
+    }, 1200);
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  /* ---------------- UTILS ---------------- */
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+    );
+  }
+  </script>
+  <!-- Keep bootstrap bundle and external app.js reference -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
